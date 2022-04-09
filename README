@@ -1,0 +1,82 @@
+morna - simple "text" pattern generation routines for Common LISP
+
+"Pattern generation" here means the manipulation of simple text grids
+and not pattern matching or macros or anything fancy like that. For
+example, given the array
+
+  #2A((#\. #\#) (#\# #\.))
+
+an Angband-type vault can be constructed with somthing like
+
+  (defun chain (grid ops)
+    (dolist (opl ops)
+      (let ((fn (pop opl)))
+        (setf grid (apply fn grid opl))))
+    grid)
+
+  (chain #2A((#\. #\#) (#\# #\.))
+    '((morna-multiply 3 7)
+      (morna-border 1 #\#)
+      (morna-border 1 #\.)
+      (morna-border 1 #\#))))
+
+producing (by way of the eg/synopsis.lisp file)
+
+  ####################
+  #..................#
+  #.################.#
+  #.#.#.#.#.#.#.#.##.#
+  #.##.#.#.#.#.#.#.#.#
+  #.#.#.#.#.#.#.#.##.#
+  #.##.#.#.#.#.#.#.#.#
+  #.#.#.#.#.#.#.#.##.#
+  #.##.#.#.#.#.#.#.#.#
+  #.################.#
+  #..................#
+  ####################
+
+I said text grids but the code is fairly generic so should work with
+boolean lines, fixnum cubes, or anything up to the ARRAY-DIMENSION-LIMIT
+for your LISP.
+
+
+INSTALLATION
+
+install for ASDF, e.g.
+
+  mkdir -p "$HOME"/.local/share/common-lisp/source
+  cd "$HOME"/.local/share/common-lisp/source
+  git clone https://github.com/thrig/morna
+
+or instead install for Quicklisp, e.g.
+
+  cd .../where/you/put/stuff/from/github
+  git clone https://github.com/thrig/morna
+  cd ~/quicklisp/local-projects
+  ln -s .../path/to/morna
+
+the eg/synopsis.lisp file might be worth a peek for how to use
+this system.
+
+
+TESTING
+
+tests can perhaps be run via something like
+
+  (ql:quickload :morna)
+  (asdf:test-system :morna)
+
+or via
+
+  make test
+
+assumming SBCL and Quicklisp are available (and make, and anything else
+that I've forgotten to mention. A working computer? Yes, you'll probably
+want one of those.).
+
+
+HISTORY
+
+This code is based on the Game::TextPatterns Perl module, though being a
+second implementation it hopefully improves on said source without the
+bloat that is so typical in second system implementations.

@@ -1,0 +1,19 @@
+#|
+eval 'exec sbcl --script "$0" ${1+"$@"}'
+|#
+
+#-quicklisp
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp"
+                                       (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))
+
+(ql:quickload :fiveam :silent t)
+
+(uiop:quit
+  (if (handler-case
+        (progn
+          (ql:quickload :morna/test :silent t)
+          (5am:run! :morna-suite))
+        (serious-condition (c) (describe c) (uiop:quit 2)))
+    0 1))

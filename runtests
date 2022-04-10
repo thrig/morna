@@ -10,6 +10,12 @@ eval 'exec sbcl --script "$0" ${1+"$@"}'
 
 (ql:quickload :fiveam :silent t)
 
+; TODO I don't see a way to seed this with say YYYYMMDD like the Test2
+; Perl module does. maybe copy the seed used and emit it when there is a
+; test failure? the static default state is (probably?) reproducible,
+; but will not expose problems that tests with different seeds might
+;(block nil (setq *random-state* (make-random-state t)) (return))
+
 (uiop:quit
   (if (handler-case
         (progn

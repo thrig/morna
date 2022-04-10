@@ -7,9 +7,9 @@
 ; passed in so that, say, an invalid fill value cannot be added
 
 (defpackage #:morna (:use #:cl)
-  (:export #:morna-border #:morna-crop
-           #:morna-flip-cols! #:morna-flip-rows!
-           #:morna-multiply #:morna-noise! #:morna-trim))
+  (:export #:morna-border #:morna-copy! #:morna-crop #:morna-flip-cols!
+           #:morna-flip-rows! #:morna-mask! #:morna-multiply
+           #:morna-noise! #:morna-rotate-grid #:morna-trim))
 (in-package #:morna)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -54,6 +54,42 @@
     (rotatef (row-major-aref array (+ lo n))
              (row-major-aref array (+ hi n)))))
 
+; from vault-variations.lisp of the ministry-of-silly-vaults repo
+(defmacro with-grid (grid rows cols &body body)
+  `(destructuring-bind (,rows ,cols) (array-dimensions ,grid) ,@body))
+
+(defmacro with-new-grid (grid new rows cols &body body)
+  `(let ((,new (make-array (list ,rows ,cols) :element-type
+                           (array-element-type ,grid))))
+     ,@body
+     ,new))
+
+; TODO better names for these?
+(defun rotate-90 (grid)
+  (with-grid grid rows cols
+   (with-new-grid grid new cols rows
+    (loop for sr from 0 below rows
+          do (loop for sc from 0 below cols
+                   for dc from (1- cols) downto 0
+                   do (setf (aref new dc sr) (aref grid sr sc)))))))
+
+(defun rotate-180 (grid)
+  (with-grid grid rows cols
+   (with-new-grid grid new rows cols
+    (loop for sr from 0 below rows
+          for dr from (1- rows) downto 0
+          do (loop for sc from 0 below cols
+                   for dc from (1- cols) downto 0
+                   do (setf (aref new dr dc) (aref grid sr sc)))))))
+
+(defun rotate-270 (grid)
+  (with-grid grid rows cols
+   (with-new-grid grid new cols rows
+    (loop for sr from 0 below rows
+          for dr from (1- rows) downto 0
+          do (loop for sc from 0 below cols
+                   do (setf (aref new sc dr) (aref grid sr sc)))))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ; PUBLIC FUNCTIONS
@@ -70,6 +106,23 @@
             (apply #'aref src srcidx)))
     dst))
 
+; this breaks with computing tradition and is not called a "move"
+(defun morna-copy! (dst src &optional (start-point 0 sp?)
+        &aux (dstdim (array-dimensions dst)))
+  "Copy from src into dst at the start-point in dst."
+  (unless sp?
+    (setf start-point (loop repeat (list-length dstdim) collect 0)))
+  (setf (apply #'aref dst start-point) (row-major-aref src 0))
+  (with-plusp-indices srcidx newrow? (array-dimensions src)
+   (setf (apply #'aref dst
+                (loop for x in srcidx for y in start-point collect (+ x y)))
+           (apply #'aref src srcidx)))
+  dst)
+; TODO (array-dimensions src) must instead be the minimum of either
+; dstdim or that of srcdim, though with dstdim modified by what the
+; startpoint changes. KLUGE meanwhile, we assume src is smaller and
+; start-point still allows src to fit into dst
+
 (defun morna-crop (src croplo crophi)
   "Crop bounded by the crop low and crop high lists."
   (let* ((dstdim (loop for width in (array-dimensions src)
@@ -82,6 +135,12 @@
             (apply #'aref src (loop for idx in dstidx for x in croplo
                                     collect (+ idx x)))))
     dst))
+
+; if rank 0 true, flip columns, rank 1 true flip rows, rank 2 flip
+; planes etc. or at least that's how I imagine it going...
+(defun morna-flip! (src ranks)
+  (error "TODO")
+  src)
 
 ; 2D arrays are common so have special cases for ... this one makes
 ; sense for most all array ranks so is not restricted to 2D
@@ -108,6 +167,14 @@
     (declare (fixnum column-size size lo hi)
              (inline swap-rows!))
     (swap-rows! src lo hi column-size)))
+
+; TODO is there a better name for this?
+(defun morna-mask! (dst fill src &key (test #'eql))
+  "Insert contents of src into dst where dst contains fill."
+  (dotimes (n (min (array-total-size dst) (array-total-size src)))
+    (when (funcall test fill (row-major-aref dst n))
+      (setf (row-major-aref dst n) (row-major-aref src n))))
+  dst)
 
 ; NOTE 'factors' must be a list of strictly positive integers;
 ; otherwise, various assumptions like 'dst' being a larger exact
@@ -149,6 +216,20 @@
            (decf to-fill))
         (decf size))
   src)
+
+; generic rotate would need some means for what dimension(s) are being
+; rotated, by how much, and in what direction. and math!!
+(defun morna-rotate (src &rest unknown) (error "TODO") src)
+
+; special case for 2D array as those are pretty common. you can have any
+; rotation direction provided it is the one that makes sense to me
+(defun morna-rotate-grid (src degrees)
+  "Rotate src by one of :90 :180 :270 degrees."
+  (declare (type (array t (* *)) src))
+  (ecase degrees
+    (:90  (rotate-90 src))
+    (:180 (rotate-180 src))
+    (:270 (rotate-270 src))))
 
 ; sugar for a morna-crop special case
 (defun morna-trim (src width &aux (len (array-rank src)))

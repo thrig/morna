@@ -14,6 +14,14 @@
 (def-suite :morna-suite)
 (in-suite :morna-suite)
 
+(defun display (grid)
+  (declare (type (array t (* *)) grid))
+  (fresh-line)
+  (let ((dim (array-dimensions grid)))
+    (dotimes (r (first dim))
+      (dotimes (c (second dim)) (format t "~a" (aref grid r c)))
+      (fresh-line))))
+
 (test with-plusp-indices
  (let ((idx '(0 0)) (max '(2 3)) out rowchanges)
    (morna::with-plusp-indices idx newrow? max
@@ -39,6 +47,15 @@
        ((1 1 1) (1 5 1) (1 1 1))
        ((1 1 1) (1 1 1) (1 1 1)))
    (morna-border #3A(((5))) 1 1))))
+
+; TODO needs more bounds checking, see the comments in the code
+(test morna-copy!
+ (is (equalp #(t nil) (morna-copy! #(nil nil) #(t))))
+ (is (equalp #(nil t) (morna-copy! #(nil nil) #(t) '(1))))
+ (is
+  (equalp #2A((nil nil nil nil) (nil nil t t))
+          (morna-copy! #2A((nil nil nil nil) (nil nil nil nil)) #2A((t t))
+           '(1 2)))))
 
 (test morna-crop
  (is (equalp #(2 7 3) (morna-crop #(1 2 7 3) '(1) '(0))))
@@ -66,6 +83,10 @@
  (is
   (equalp #2A((7 8 9) (4 5 6) (1 2 3))
           (morna-flip-rows! #2A((1 2 3) (4 5 6) (7 8 9))))))
+
+(test morna-mask!
+ (is (equalp #(1 8 7 4 5 6) (morna-mask! #(1 0 0 4 0 6) 0 #(9 8 7 6 5 4))))
+ )
 
 (test morna-multiply
  (is (equalp #(a b a b) (morna-multiply #(a b) 2)))
@@ -124,6 +145,12 @@
        (0)))
    (is (string= "0.25" (format nil "~,2f" (/ counta size))))
    (is (string= "0.25" (format nil "~,2f" (/ countb size))))))
+
+(test morna-rotate-grid
+ (let ((six #2A((4 5 6) (1 2 3))))
+   (is (equalp #2A((6 3) (5 2) (4 1)) (morna-rotate-grid six :90)))
+   (is (equalp #2A((3 2 1) (6 5 4)) (morna-rotate-grid six :180)))
+   (is (equalp #2A((1 4) (2 5) (3 6)) (morna-rotate-grid six :270)))))
 
 (test morna-trim
  (is (equalp #(7) (morna-trim #(1 7 2) 1)))

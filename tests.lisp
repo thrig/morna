@@ -24,13 +24,13 @@
 
 (test with-plusp-indices
  (let ((idx '(0 0)) (max '(2 3)) out rowchanges)
-   (morna::with-plusp-indices idx newrow? max
+   (morna::with-plusp-indices (idx newrow? max)
      (push (cons (first idx) (second idx)) out)
      (push newrow? rowchanges))
    (is (equal '((0 . 1) (0 . 2) (1 . 0) (1 . 1) (1 . 2)) (nreverse out)))
    (is (equal '(nil nil t nil nil) (nreverse rowchanges))))
  (let ((idx '(0 0 0)) (max '(2 2 2)) out rowchanges)
-   (morna::with-plusp-indices idx newrow? max
+   (morna::with-plusp-indices (idx newrow? max)
      (push (copy-list idx) out)
      (push newrow? rowchanges))
    (is (equal '(nil t nil t nil t nil) (nreverse rowchanges)))

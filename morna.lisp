@@ -19,7 +19,7 @@
 ; NOTE the index (0 . 0) is not handled by this macro, hence the plusp
 ; in the name. 'max' is the limit (or odometer) the indices will not
 ; exceed (based on "Higher Order Perl" p.131)
-(defmacro with-plusp-indices (indices rollover maximums &body body)
+(defmacro with-plusp-indices ((indices rollover maximums) &body body)
   "Loops over the index sets for a given list of maximum values, but not the first element."
   (let ((len (gensym)) (max-index (gensym)) (index (gensym)))
     `(let* ((,rollover) (,len (list-length ,maximums))
@@ -55,27 +55,27 @@
              (row-major-aref array (+ hi n)))))
 
 ; from vault-variations.lisp of the ministry-of-silly-vaults repo
-(defmacro with-grid (grid rows cols &body body)
+(defmacro with-grid ((grid rows cols) &body body)
   `(destructuring-bind (,rows ,cols) (array-dimensions ,grid) ,@body))
 
-(defmacro with-new-grid (grid new rows cols &body body)
-  `(let ((,new (make-array (list ,rows ,cols) :element-type
-                           (array-element-type ,grid))))
+(defmacro with-new-grid ((grid new rows cols) &body body)
+  `(let ((,new (make-array (list ,rows ,cols)
+                           :element-type (array-element-type ,grid))))
      ,@body
      ,new))
 
 ; TODO better names for these?
 (defun rotate-90 (grid)
-  (with-grid grid rows cols
-   (with-new-grid grid new cols rows
+  (with-grid (grid rows cols)
+   (with-new-grid (grid new cols rows)
     (loop for sr from 0 below rows
           do (loop for sc from 0 below cols
                    for dc from (1- cols) downto 0
                    do (setf (aref new dc sr) (aref grid sr sc)))))))
 
 (defun rotate-180 (grid)
-  (with-grid grid rows cols
-   (with-new-grid grid new rows cols
+  (with-grid (grid rows cols)
+   (with-new-grid (grid new rows cols)
     (loop for sr from 0 below rows
           for dr from (1- rows) downto 0
           do (loop for sc from 0 below cols
@@ -83,8 +83,8 @@
                    do (setf (aref new dr dc) (aref grid sr sc)))))))
 
 (defun rotate-270 (grid)
-  (with-grid grid rows cols
-   (with-new-grid grid new cols rows
+  (with-grid (grid rows cols)
+   (with-new-grid (grid new cols rows)
     (loop for sr from 0 below rows
           for dr from (1- rows) downto 0
           do (loop for sc from 0 below cols
@@ -101,7 +101,7 @@
                                  :initial-element fill)))
     (setf (apply #'aref dst (loop for x in srcdim collect width))
           (row-major-aref src 0))
-    (with-plusp-indices srcidx newrow? srcdim
+    (with-plusp-indices (srcidx newrow? srcdim)
       (setf (apply #'aref dst (loop for x in srcidx collect (+ x width)))
             (apply #'aref src srcidx)))
     dst))
@@ -113,7 +113,7 @@
   (unless sp?
     (setf start-point (loop repeat (list-length dstdim) collect 0)))
   (setf (apply #'aref dst start-point) (row-major-aref src 0))
-  (with-plusp-indices srcidx newrow? (array-dimensions src)
+  (with-plusp-indices (srcidx newrow? (array-dimensions src))
    (setf (apply #'aref dst
                 (loop for x in srcidx for y in start-point collect (+ x y)))
            (apply #'aref src srcidx)))
@@ -122,6 +122,12 @@
 ; dstdim or that of srcdim, though with dstdim modified by what the
 ; startpoint changes. KLUGE meanwhile, we assume src is smaller and
 ; start-point still allows src to fit into dst
+;
+; if go past last row of dst (how detect?) can stop copy; otherwise,
+; may have a case where just some of the columns of src extend off
+; of dst so will need to consider more rows
+;
+; err 3d or higher means any combination of axes can be oob
 
 (defun morna-crop (src croplo crophi)
   "Crop bounded by the crop low and crop high lists."
@@ -130,7 +136,7 @@
                        collect (- width (+ x y))))
          (dst (make-array dstdim :element-type (array-element-type src))))
     (setf (row-major-aref dst 0) (apply #'aref src croplo))
-    (with-plusp-indices dstidx newrow? dstdim
+    (with-plusp-indices (dstidx newrow? dstdim)
       (setf (apply #'aref dst dstidx)
             (apply #'aref src (loop for idx in dstidx for x in croplo
                                     collect (+ idx x)))))
@@ -194,7 +200,7 @@
         (srcmax (array-total-size src))
         (srcoffset 0))
     (setf (row-major-aref dst 0) (row-major-aref src 0))
-    (with-plusp-indices idx newrow? dstdims
+    (with-plusp-indices (idx newrow? dstdims)
       (when newrow?
         (when (>= (incf srcoffset srclen) srcmax)
           (setf srcoffset 0)))

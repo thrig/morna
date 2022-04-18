@@ -154,7 +154,7 @@
 ; restricted to 2D shapes
 (defun morna-flip-rows! (src)
   "Flip (or mirror) the rows of the 2D array src."
-  (declare (type (array t (* *)) src))
+  (declare (type (array * (* *)) src))
   (do* ((column-size (first (last (array-dimensions src))))
         (size (array-total-size src))
         (lo 0 (+ lo column-size))
@@ -221,7 +221,7 @@
 ; rotation direction provided it is the one that makes sense to me
 (defun morna-rotate-grid (src degrees)
   "Rotate src by one of :90 :180 :270 degrees."
-  (declare (type (array t (* *)) src))
+  (declare (type (array * (* *)) src))
   (ecase degrees
     (:90  (rotate-90 src))
     (:180 (rotate-180 src))

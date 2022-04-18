@@ -48,14 +48,18 @@
        ((1 1 1) (1 1 1) (1 1 1)))
    (morna-border #3A(((5))) 1 1))))
 
-; TODO needs more bounds checking, see the comments in the code
 (test morna-copy!
  (is (equalp #(t nil) (morna-copy! #(nil nil) #(t))))
  (is (equalp #(nil t) (morna-copy! #(nil nil) #(t) '(1))))
+ (is (equalp #(nil t) (morna-copy! #(nil nil) #(t t t) '(1))))
  (is
   (equalp #2A((nil nil nil nil) (nil nil t t))
           (morna-copy! #2A((nil nil nil nil) (nil nil nil nil)) #2A((t t))
-           '(1 2)))))
+           '(1 2))))
+ (is
+  (equalp #2A((nil nil nil nil) (nil nil nil t))
+          (morna-copy! #2A((nil nil nil nil) (nil nil nil nil))
+           #2A((t t t t) (t t t t)) '(1 3)))))
 
 (test morna-crop
  (is (equalp #(2 7 3) (morna-crop #(1 2 7 3) '(1) '(0))))

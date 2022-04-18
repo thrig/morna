@@ -1,4 +1,7 @@
+depend:
+	@sbcl --version
+
 test:
 	@./runtests
 
-.PHONY: test
+.PHONY: depend test

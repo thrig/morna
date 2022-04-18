@@ -114,20 +114,10 @@
     (setf start-point (loop repeat (list-length dstdim) collect 0)))
   (setf (apply #'aref dst start-point) (row-major-aref src 0))
   (with-plusp-indices (srcidx newrow? (array-dimensions src))
-   (setf (apply #'aref dst
-                (loop for x in srcidx for y in start-point collect (+ x y)))
-           (apply #'aref src srcidx)))
+   (let ((dstidx (loop for x in srcidx for y in start-point collect (+ x y))))
+     (when (apply #'array-in-bounds-p dst dstidx)
+       (setf (apply #'aref dst dstidx) (apply #'aref src srcidx)))))
   dst)
-; TODO (array-dimensions src) must instead be the minimum of either
-; dstdim or that of srcdim, though with dstdim modified by what the
-; startpoint changes. KLUGE meanwhile, we assume src is smaller and
-; start-point still allows src to fit into dst
-;
-; if go past last row of dst (how detect?) can stop copy; otherwise,
-; may have a case where just some of the columns of src extend off
-; of dst so will need to consider more rows
-;
-; err 3d or higher means any combination of axes can be oob
 
 (defun morna-crop (src croplo crophi)
   "Crop bounded by the crop low and crop high lists."

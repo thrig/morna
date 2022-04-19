@@ -7,9 +7,11 @@
 ; passed in so that, say, an invalid fill value cannot be added
 
 (defpackage #:morna (:use #:cl)
-  (:export #:morna-border #:morna-copy! #:morna-crop #:morna-flip-cols!
-           #:morna-flip-rows! #:morna-mask! #:morna-multiply
-           #:morna-noise! #:morna-rotate-grid #:morna-trim))
+                    (:export #:morna-border #:morna-copy! #:morna-crop
+                             #:morna-display-grid #:morna-flip-cols!
+                             #:morna-flip-rows! #:morna-mask! #:morna-multiply
+                             #:morna-noise! #:morna-rotate-grid #:morna-trim
+                             #:morna-upfrac))
 (in-package #:morna)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -132,6 +134,13 @@
                                     collect (+ idx x)))))
     dst))
 
+(defun morna-display-grid (grid &optional (stream t))
+  (declare (type (array * (* *)) grid))
+  (let ((dim (array-dimensions grid)))
+    (dotimes (r (first dim))
+      (dotimes (c (second dim)) (format stream "~a" (aref grid r c)))
+      (fresh-line stream))))
+
 ; if rank 0 true, flip columns, rank 1 true flip rows, rank 2 flip
 ; planes etc. or at least that's how I imagine it going...
 (defun morna-flip! (src ranks)
@@ -202,7 +211,7 @@
 ; 'index' range during the loop? if so copy 'size' to another variable
 ; and decf that
 (defun morna-noise! (src fill percent &aux (size (array-total-size src)))
-  "Fill the grid with the percent amount of fill elements."
+  "Fill src with the percent amount of fill elements."
   (loop with to-fill = (truncate (* size percent))
         for index from 0 below size
         while (plusp to-fill) do
@@ -232,3 +241,35 @@
   "Crop all sides by width."
   (let ((trim (loop repeat len collect width)))
     (morna-crop src trim trim)))
+
+; it's probably easier to show than tell what morna-upfrac does;
+;
+;   #.
+;   ##
+;
+; can upfrac to
+;   
+;   #...
+;   ##..
+;   #.#.
+;   ####
+;
+; if #\. is fill and #\# is true via test-fn
+(defun morna-upfrac (src fill test-fn &optional (sources nil so?))
+  "Double src to dst tiling src but only where src is true for test-fn."
+  (let* ((srcdim (array-dimensions src))
+         (dst (make-array (mapcar (lambda (x) (* 2 x)) srcdim)
+                          :element-type (array-element-type src)
+                          :initial-element fill)))
+    (when (funcall test-fn (row-major-aref src 0))
+      (morna-copy! dst src))
+    (with-plusp-indices
+      (srcidx roll? srcdim)
+      (when (funcall test-fn (apply #'aref src srcidx))
+        (morna-copy! dst (if so?
+                           (etypecase sources
+                             (list (nth (random (list-length sources)) sources))
+                             (function (funcall sources)))
+                           src)
+                     (mapcar (lambda (x) (* 2 x)) srcidx))))
+    dst))

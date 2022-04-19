@@ -35,9 +35,10 @@ producing (by way of the eg/synopsis.lisp file)
   #..................#
   ####################
 
-I said text grids but the code is fairly generic so should work with
-boolean lines, fixnum cubes, or anything up to the ARRAY-DIMENSION-LIMIT
-for your LISP.
+Some of the routines should work on array of any dimensions (up to
+ARRAY-DIMENSION-LIMIT) while others are restricted to "grids" or 2D
+arrays, mostly due to N-dimensional support being tricky to implement,
+and I really only need 2D at the moment.
 
 
 INSTALLATION
@@ -55,13 +56,14 @@ or instead install for Quicklisp, e.g.
   cd ~/quicklisp/local-projects
   ln -s .../path/to/morna
 
-the eg/synopsis.lisp file might be worth a peek for how to use
-this system.
+the eg/synopsis.lisp file might be worth a peek for how to use this
+system, or upvary.lisp over in
+https://github.com/thrig/ministry-of-silly-vaults/
 
 
 TESTING
 
-tests can perhaps be run via something like
+The tests can perhaps be run via something like
 
   (ql:quickload :morna)
   (asdf:test-system :morna)

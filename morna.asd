@@ -4,7 +4,7 @@
 (asdf:defsystem :morna
   :components ((:file "morna"))
   :in-order-to ((test-op (test-op :morna/test)))
-  :version "0.0.4"
+  :version "0.0.5"
   :author "Jeremy Mates <jmates@example.org>"
   :license "BSD"
   :description "simple text pattern generation routines")

@@ -40,6 +40,16 @@
               ((1 1 1) (1 1 1) (1 1 1)))
           (morna-border #3A(((5))) 1 1))))
 
+(test morna-clone
+      (let* ((orig #2A((#\. #\# #\.)
+                       (#\. #\. #\#)
+                       (#\# #\# #\#)))
+             (copy (morna-clone orig)))
+        (is (equalp orig copy))
+        ; but is it really a copy?
+        (setf (row-major-aref copy 0) #\x)
+        (is (char/= #\x (row-major-aref orig 0)))))
+
 (test morna-copy!
       (is (equalp #(t nil) (morna-copy! #(nil nil) #(t))))
       (is (equalp #(nil t) (morna-copy! #(nil nil) #(t) '(1))))
@@ -70,6 +80,10 @@
             (with-output-to-string (ret)
               (morna-display-grid #2A((#\. #\#) (#\# #\.)) ret)))))
 
+(test morna-flip-both!
+      (is (equalp #2A((3 2 1) (6 5 4))
+                  (morna-flip-both! #2A((4 5 6) (1 2 3))))))
+
 ; zero-dimensional arrays don't make much sense for this code but are
 ; tested to ensure nothing bad happens if one shows up
 (test morna-flip-cols!
@@ -80,11 +94,30 @@
         (equalp #2A((4 3 2 1) (5 4 3 2) (7 6 5 4))
                 (morna-flip-cols! #2A((1 2 3 4) (2 3 4 5) (4 5 6 7))))))
 
+(test morna-flip-four
+      (is (equalp #2A((#\. #\# #\# #\# #\# #\# #\# #\.)
+                      (#\. #\. #\. #\# #\# #\. #\. #\.)
+                      (#\. #\. #\. #\# #\# #\. #\. #\.)
+                      (#\. #\# #\# #\# #\# #\# #\# #\.))
+                  (morna-flip-four #2A((#\# #\# #\# #\.) (#\# #\. #\. #\.))))))
+
 (test morna-flip-rows!
       (is (equalp #2A((4 5 6) (1 2 3)) (morna-flip-rows! #2A((1 2 3) (4 5 6)))))
       (is
         (equalp #2A((7 8 9) (4 5 6) (1 2 3))
                 (morna-flip-rows! #2A((1 2 3) (4 5 6) (7 8 9))))))
+
+(test morna-fourup
+      (is (equalp #2A((#\? #\? #\. #\. #\? #\? #\? #\?)
+                      (#\? #\? #\# #\. #\? #\? #\? #\?)
+                      (#\? #\? #\# #\. #\# #\# #\# #\.)
+                      (#\? #\? #\# #\# #\# #\. #\. #\.)
+                      (#\. #\. #\. #\# #\# #\# #\? #\?)
+                      (#\. #\# #\# #\# #\. #\# #\? #\?)
+                      (#\? #\? #\? #\? #\. #\# #\? #\?)
+                      (#\? #\? #\? #\? #\. #\. #\? #\?))
+                  (morna-fourup #2A((#\# #\# #\# #\.)
+                                    (#\# #\. #\. #\.)) #\?))))
 
 (test morna-mask!
       (is (equalp #(1 8 7 4 5 6) (morna-mask! #(1 0 0 4 0 6) 0 #(9 8 7 6 5 4))))

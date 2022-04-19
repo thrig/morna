@@ -6,12 +6,13 @@
 ; missing subscripts. it may help to set the :element-type of arrays
 ; passed in so that, say, an invalid fill value cannot be added
 
-(defpackage #:morna (:use #:cl)
-                    (:export #:morna-border #:morna-copy! #:morna-crop
-                             #:morna-display-grid #:morna-flip-cols!
-                             #:morna-flip-rows! #:morna-mask! #:morna-multiply
-                             #:morna-noise! #:morna-rotate-grid #:morna-trim
-                             #:morna-upfrac))
+(defpackage #:morna
+  (:use #:cl)
+  (:export #:morna-border #:morna-clone #:morna-copy! #:morna-crop
+           #:morna-display-grid #:morna-flip-both! #:morna-flip-cols!
+           #:morna-flip-four #:morna-flip-rows! #:morna-fourup #:morna-mask!
+           #:morna-multiply #:morna-noise! #:morna-rotate-grid #:morna-trim
+           #:morna-upfrac))
 (in-package #:morna)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -75,15 +76,6 @@
                    for dc from (1- cols) downto 0
                    do (setf (aref new dc sr) (aref grid sr sc)))))))
 
-(defun rotate-180 (grid)
-  (with-grid (grid rows cols)
-   (with-new-grid (grid new rows cols)
-    (loop for sr from 0 below rows
-          for dr from (1- rows) downto 0
-          do (loop for sc from 0 below cols
-                   for dc from (1- cols) downto 0
-                   do (setf (aref new dr dc) (aref grid sr sc)))))))
-
 (defun rotate-270 (grid)
   (with-grid (grid rows cols)
    (with-new-grid (grid new cols rows)
@@ -106,6 +98,12 @@
     (with-plusp-indices (srcidx newrow? srcdim)
       (setf (apply #'aref dst (loop for x in srcidx collect (+ x width)))
             (apply #'aref src srcidx)))
+    dst))
+
+(defun morna-clone (src &aux (srcdim (array-dimensions src)))
+  (let ((dst (make-array srcdim :element-type (array-element-type src))))
+    (dotimes (n (array-total-size src))
+      (setf (row-major-aref dst n) (row-major-aref src n)))
     dst))
 
 ; this breaks with computing tradition and is not called a "move"
@@ -134,17 +132,18 @@
                                     collect (+ idx x)))))
     dst))
 
-(defun morna-display-grid (grid &optional (stream t))
-  (declare (type (array * (* *)) grid))
-  (let ((dim (array-dimensions grid)))
-    (dotimes (r (first dim))
-      (dotimes (c (second dim)) (format stream "~a" (aref grid r c)))
-      (fresh-line stream))))
-
 ; if rank 0 true, flip columns, rank 1 true flip rows, rank 2 flip
 ; planes etc. or at least that's how I imagine it going...
 (defun morna-flip! (src ranks)
   (error "TODO")
+  src)
+
+; also a 180 degree rotation
+(defun morna-flip-both! (src &aux (size (array-total-size src)))
+  "Flip the rows and columns of src."
+  (declare (type (array * (* *)) src))
+  (let ((line (make-array size :displaced-to src)))
+    (nreverse line))
   src)
 
 ; 2D arrays are common so have special cases for ... this one makes
@@ -159,6 +158,30 @@
              (inline reverse-column!))
     (reverse-column! src offset column-size)))
 
+; matches flip_four of Game::TextPatterns, for better or worse
+(defun morna-flip-four (src &aux (srcdim (array-dimensions src)))
+  (declare (type (array * (* *)) src))
+  (let ((cpy (morna-clone src))
+        (dst (make-array (mapcar (lambda (x) (* 2 x)) srcdim)
+                         :element-type (array-element-type src)))
+        (dstidx (copy-list srcdim)))
+    ; QI on unit circle
+    (setf (nth 0 dstidx) 0)
+    (morna-copy! dst cpy dstidx)
+    ; QII or [0,0] of dst
+    (morna-flip-cols! cpy)
+    (morna-copy! dst cpy)
+    ; QIII
+    (morna-flip-rows! cpy)
+    (setf (nth 1 dstidx) 0)
+    (setf (nth 0 dstidx) (nth 0 srcdim))
+    (morna-copy! dst cpy dstidx)
+    ; QIV
+    (morna-flip-cols! cpy)
+    (setf (nth 1 dstidx) (nth 1 srcdim))
+    (morna-copy! dst cpy dstidx)
+    dst))
+
 ; this could flip only the rows of higher rank arrays, but for now is
 ; restricted to 2D shapes
 (defun morna-flip-rows! (src)
@@ -172,6 +195,36 @@
     (declare (fixnum column-size size lo hi)
              (inline swap-rows!))
     (swap-rows! src lo hi column-size)))
+
+; from four_up of Game::TextPatterns. not much tested. maybe call this a
+; pinwheel function? because it makes something like that
+(defun morna-fourup (src fill &aux (srcdim (array-dimensions src)))
+  "Rotate src four times into a new grid."
+  (declare (type (array * (* *)) src))
+  (let* ((hor (morna-clone src))
+         (ver (rotate-90 src))
+         (dim (* 2 (loop for x in srcdim maximizing x)))
+         (dst (make-array `(,dim ,dim)
+                          :element-type (array-element-type src)
+                          :initial-element fill)))
+    ; QI
+    (morna-copy! dst hor srcdim)
+    ; QII
+    (morna-copy! dst ver (list 0 (/ (nth 1 srcdim) 2)))
+    ; QIII
+    (morna-flip-both! hor)
+    (morna-copy! dst hor (list (nth 1 srcdim) 0))
+    ; QIV
+    (morna-flip-both! ver)
+    (morna-copy! dst ver (list (nth 1 srcdim) (nth 1 srcdim)))
+    dst))
+
+(defun morna-display-grid (src &optional (stream t))
+  (declare (type (array * (* *)) src))
+  (let ((dim (array-dimensions src)))
+    (dotimes (r (first dim))
+      (dotimes (c (second dim)) (format stream "~a" (aref src r c)))
+      (fresh-line stream))))
 
 ; TODO is there a better name for this?
 (defun morna-mask! (dst fill src &key (test #'eql))
@@ -230,10 +283,12 @@
 ; rotation direction provided it is the one that makes sense to me
 (defun morna-rotate-grid (src degrees)
   "Rotate src by one of :90 :180 :270 degrees."
-  (declare (type (array * (* *)) src))
+  (declare
+    (inline morna-clone morna-flip-both! rotate-90 rotate-270)
+    (type (array * (* *)) src))
   (ecase degrees
     (:90  (rotate-90 src))
-    (:180 (rotate-180 src))
+    (:180 (morna-flip-both! (morna-clone src)))
     (:270 (rotate-270 src))))
 
 ; sugar for a morna-crop special case
@@ -255,21 +310,24 @@
 ;   ####
 ;
 ; if #\. is fill and #\# is true via test-fn
+(defun upfrac-pick (custom-srcs src sources)
+  (if custom-srcs
+    (etypecase sources
+      (list (nth (random (list-length sources)) sources))
+      (function (funcall sources)))
+    src))
+
 (defun morna-upfrac (src fill test-fn &optional (sources nil so?))
   "Double src to dst tiling src but only where src is true for test-fn."
+  (declare (inline upfrac-pic))
   (let* ((srcdim (array-dimensions src))
          (dst (make-array (mapcar (lambda (x) (* 2 x)) srcdim)
                           :element-type (array-element-type src)
                           :initial-element fill)))
     (when (funcall test-fn (row-major-aref src 0))
-      (morna-copy! dst src))
-    (with-plusp-indices
-      (srcidx roll? srcdim)
+      (morna-copy! dst (upfrac-pick so? src sources)))
+    (with-plusp-indices (srcidx roll? srcdim)
       (when (funcall test-fn (apply #'aref src srcidx))
-        (morna-copy! dst (if so?
-                           (etypecase sources
-                             (list (nth (random (list-length sources)) sources))
-                             (function (funcall sources)))
-                           src)
+        (morna-copy! dst (upfrac-pick so? src sources)
                      (mapcar (lambda (x) (* 2 x)) srcidx))))
     dst))

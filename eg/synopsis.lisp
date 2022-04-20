@@ -8,14 +8,10 @@
 (defpackage #:synopsis (:use #:cl #:morna))
 (in-package #:synopsis)
 
-(defun chain-ops (grid ops)
-  (dolist (opl ops grid)
-    (let ((fn (pop opl)))
-      (setf grid (apply fn grid opl)))))
-
-(morna-display-grid
-  (chain-ops #2A((#\. #\#) (#\# #\.))
-             '((morna-multiply 3 7)
-               (morna-border 1 #\#)
-               (morna-border 1 #\.)
-               (morna-border 1 #\#))))
+(morna-chain!
+  #2A((#\. #\#) (#\# #\.))
+  '((morna-multiply 3 7)
+    (morna-border 1 #\#)
+    (morna-border 1 #\.)
+    (morna-border 1 #\#)
+    (morna-display-grid)))

@@ -14,6 +14,7 @@
 (def-suite :morna-suite)
 (in-suite :morna-suite)
 
+; if this breaks lots of other calls will, too
 (test with-plusp-indices
       (let ((idx '(0 0)) (max '(2 3)) out rowchanges)
         (morna::with-plusp-indices (idx newrow? max)
@@ -39,6 +40,15 @@
               ((1 1 1) (1 5 1) (1 1 1))
               ((1 1 1) (1 1 1) (1 1 1)))
           (morna-border #3A(((5))) 1 1))))
+
+(test morna-chain!
+      (let* ((input (make-array 2 :element-type 'fixnum :initial-element 0))
+             (output (morna-chain! input
+                       (list
+                         (list (lambda (src) (incf (aref src 0)) src))
+                         (list (lambda (src n) (incf (aref src 1) n) src) 3)))))
+        (is (equalp #(1 3) output))
+        (is (equalp #(1 3) input))))
 
 (test morna-clone
       (let* ((orig #2A((#\. #\# #\.)
@@ -195,6 +205,15 @@
                   #2A((1 1 1 1 1) (2 2 2 2 2) (3 3 7 3 3) (2 2 2 2 2) (1 1 1 1 1))
                   2))))
 
+(test morna-truncate
+      (is (equalp #2A((#\# #\. #\.) (#\# #\# #\.))
+                  (morna-truncate
+                    #2A((#\# #\. #\. #\.)
+                        (#\# #\# #\. #\.)
+                        (#\# #\. #\# #\.)
+                        (#\# #\# #\# #\#))
+                    '(2 3)))))
+
 ; someone set us up the fractal
 (test morna-upfrac
       (is (equalp
@@ -205,3 +224,12 @@
             (morna-upfrac (make-array '(2 2) :element-type 'character
                                       :initial-contents '((#\# #\.) (#\# #\#)))
                           #\. (lambda (x) (eql x #\#))))))
+
+(test morna-write-file
+      (let ((ret (morna-write-file #2A((#\# #\.) (#\# #\#)) "out")))
+        (is (equalp #2A((#\# #\.) (#\# #\#)) ret)))
+      (is (equalp '("#." "##")
+            (with-open-file (fh "out")
+              (loop for line = (read-line fh nil) while line collect line))))
+      ; this may not be portable? if not uiop is probably loaded
+      (delete-file "out"))

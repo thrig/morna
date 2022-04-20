@@ -1,0 +1,237 @@
+.Dd April 19 2022
+.Dt MORNA 3l
+.Os
+.Sh NAME
+.Nm morna
+.Nd simple \&"text\&" pattern generation routines
+.Sh SYNOPSIS
+.Bl -column -compact
+.It Pq Sy morna-border Em src Em width Em fill
+.It Pq Sy morna-chain! Em src Em function-args
+.It Pq Sy morna-clone Em src
+.It Pq Sy morna-copy! Em dst Em src Op Em start-point
+.It Pq Sy morna-crop Em src Em croplo Em crophi
+.It Pq Sy morna-display-grid Em src Op stream
+.It Pq Sy morna-flip-both! Em src
+.It Pq Sy morna-flip-cols! Em src
+.It Pq Sy morna-flip-four Em src
+.It Pq Sy morna-flip-rows! Em src
+.It Pq Sy morna-fourup Em src Em fill
+.It Pq Sy morna-mask! Em dst Em fill Em src Op :test
+.It Pq Sy morna-multiply Em src Em factors
+.It Pq Sy morna-noise! Em src Em fill Em percent
+.It Pq Sy morna-rotate-grid Em src Em degrees
+.It Pq Sy morna-trim Em src Em width
+.It Pq Sy morna-truncate! Em src Em limits
+.It Pq Sy morna-upfrac Em src Em fill Em test-fn Op Em sources
+.It Pq Sy morna-write-file Em src Em pathname
+.El
+.Sh DESCRIPTION
+.Nm
+is a Common LISP system that provides simple array handling and
+generation routines. While character arrays are typical, many
+functions operate on arbitrary arrays. Some functions operate on
+arrays of any dimension (up to
+.Sy ARRAY-DIMENSION-LIMIT )
+though two dimensional arrays are most common.
+.Pp
+In general the functions take an array as the first argument and return
+a new or possibly modified version of the given array. This makes call
+chaining possible with
+.Sy MORNA-CHAIN!
+which as the name implies modifies the given array:
+.Pp
+.Dl (morna-chain!
+.Dl \ \ #2A((#\e. #\e#) (#\e# #\e.))
+.Dl \ \ '((morna-multiply 3 7)
+.Dl \ \ \ \ (morna-border 1 #\e#)
+.Dl \ \ \ \ (morna-border 1 #\e.)
+.Dl \ \ \ \ (morna-border 1 #\e#)
+.Dl \ \ \ \ (morna-display-grid)))
+.Sh FUNCTIONS
+There are other internal functions (and macros) though these may change
+without notice, unless documented here.
+.Bl -tag -width Ds
+.It Pq Sy morna-border Em src Em width Em fill
+Adds a border of the given
+.Em width
+and specified
+.Em fill
+element.
+.It Pq Sy morna-chain! Em src Em function-args
+Loops over the
+.Em function-args
+list and applies each function and any optional arguments to
+.Em src .
+.It Pq Sy morna-clone Em src
+Copies
+.Em src
+to a new array.
+.It Pq Sy morna-copy! Em dst Em src Op Em start-point
+Modifies
+.Em dst
+by copying
+.Em src
+into it, optionally starting at the given list of coordinates in
+.Em dst .
+These might be
+.Li '(1)
+for a one-dimensional array,
+.Li '(4 2)
+for a two-dimensional array, etc.
+.It Pq Sy morna-crop Em src Em croplo Em crophi
+Trims the width
+.Em croplo
+off the beginning of the array and the width
+.Em crophi
+off the end.
+.It Pq Sy morna-display-grid Em src Op stream
+Prints the contents of a two-dimensional array via the
+.Dv ~a
+control to
+.Sy FORMAT .
+.It Pq Sy morna-flip-both! Em src
+Horizontal and vertical flip of
+.Em src ,
+or a 180 degree rotation.
+.It Pq Sy morna-flip-cols! Em src
+Horizontal mirror of the column values.
+.It Pq Sy morna-flip-four Em src
+Flips
+.Em src
+four times into a new array:
+.Pp
+.Dl \ \ \ \ ###. src
+.Dl \ \ \ \ #...
+.Pp
+.Dl .######. result
+.Dl ...##...
+.Dl ...##...
+.Dl .######.
+.It Pq Sy morna-flip-rows! Em src
+Vertically mirror the rows in
+.Em src ,
+which must be two-dimensional.
+.It Pq Sy morna-fourup Em src Em fill
+Rotates
+.Em src
+four times into a new array. Sort of like a pinwheel.
+.It Pq Sy morna-mask! Em dst Em fill Em src Op :test
+Modify
+.Em dst
+with the contents of
+.Em src
+where the array element of
+.Em dst
+matches
+.Em fill
+possibly with some custom test function,
+.Sy EQL
+by default.
+.It Pq Sy morna-multiply Em src Em factors
+Multiplies or tiles
+.Em src
+by the amount in the list
+.Em factors
+for each array dimension.
+.It Pq Sy morna-noise! Em src Em fill Em percent
+Randomly modifies
+.Em src
+with
+.Em fill
+modifying up to
+.Em percent
+of the array. See also
+.Sy *RANDOM-STATE*
+in the CLHS.
+.It Pq Sy morna-rotate-grid Em src Em degrees
+Rotate the two-dimensional array
+.Em src
+by the given keyword
+.Em degrees ,
+which must be one of
+.Dv :90 ,
+.Dv :180 , or
+.Dv :270 .
+.It Pq Sy morna-trim Em src Em width
+Special case for
+.Sy MORNA-CROP
+that takes
+.Em width
+off of all sides of the array
+.Em src .
+.It Pq Sy morna-truncate Em src Em limits
+Truncate
+.Em src
+to the given
+.Em limits .
+.It Pq Sy morna-upfrac Em src Em fill Em test-fn Op Em sources
+Double
+.Em src
+to a new array,
+tiling in
+.Em src
+only where the element of
+.Em src
+is true according to the
+.Em test-fn .
+The new array is first filled with the
+.Em fill
+character.
+The optional
+.Em sources
+is a
+.Em list
+or
+.Em function
+that allows some other array than
+.Em src
+to be copied from: variations on
+.Em src ,
+presumably.
+.It Pq Sy morna-write-file Em src Em pathname
+Utility wrapper around
+.Sy MORNA-DISPLAY-GRID
+to write out a two-dimensional array to a file.
+.Em pathname
+will be clobbered.
+.El
+.Sh MACROS
+.Bl -tag -width Ds
+.It Pq Sy with-plusp-indices Po Em indices Em rollover? Em maximums Pc Em body
+Not exported but heavily used. Counts from the first index up to the
+max of the maxiumum sizes given in an array of arbitrary dimensions.
+.Em indices
+will contain the
+.Qq odometer
+value for each (non-zero) index set of the array.
+.Em rollover?
+indicates that a new row was switched to.
+.Pp
+The zero-th index
+.Po
+.Dv '(0)
+or
+.Dv '(0 0)
+or ...
+.Pc
+is not handled.
+.Pp
+If possible use something standard like
+.Sy ROW-MAJOR-AREF
+to deal with multi-dimensional arrays.
+.El
+.Sh SEE ALSO
+.Xr Game::TextPatterns 3pm
+.Sh HISTORY
+This code is based on the
+.Xr Game::TextPatterns 3pm
+Perl module, though being a second implementation hopefully improves on
+said without the bloat that is so common in second system
+implementations.
+.Pp
+.Dl morna \ (gismu)
+.Dl \ \ \ \ \ \ \ X1 is/reflects/represents a pattern of forms/events
+.Dl \ \ \ \ \ \ \ X2 arranged according to structure X3.
+.Sh AUTHOR
+Jeremy Mates

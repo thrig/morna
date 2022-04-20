@@ -1,26 +1,23 @@
 morna - simple "text" pattern generation routines for Common LISP
 
 "Pattern generation" here means the manipulation of simple text grids
-and not pattern matching or macros or anything fancy like that. For
-example, given the array
+and not pattern matching or macros or anything fancy like that from
+computer science. For example, given the array
 
-  #2A((#\. #\#) (#\# #\.))
+  #2A((#\. #\#)
+      (#\# #\.))
 
 an Angband-type vault can be constructed with somthing like
 
-  (defun chain (grid ops)
-    (dolist (opl ops)
-      (let ((fn (pop opl)))
-        (setf grid (apply fn grid opl))))
-    grid)
-
-  (chain #2A((#\. #\#) (#\# #\.))
+  (morna-chain!
+    #2A((#\. #\#) (#\# #\.))
     '((morna-multiply 3 7)
       (morna-border 1 #\#)
       (morna-border 1 #\.)
-      (morna-border 1 #\#))))
+      (morna-border 1 #\#)
+      (morna-display-grid)))
 
-producing (by way of the eg/synopsis.lisp file)
+producing, by way of the eg/synopsis.lisp file,
 
   ####################
   #..................#
@@ -61,6 +58,11 @@ system, or upvary.lisp over in
 https://github.com/thrig/ministry-of-silly-vaults/
 
 
+DOCUMENTATION
+
+See morna.3 which should be copied to some suitable MANPATH directory.
+
+
 TESTING
 
 The tests can perhaps be run via something like
@@ -75,10 +77,3 @@ or via
 assumming SBCL and Quicklisp are available (and make, and anything else
 that I've forgotten to mention. A working computer? Yes, you'll probably
 want one of those.).
-
-
-HISTORY
-
-This code is based on the Game::TextPatterns Perl module, though being a
-second implementation it hopefully improves on said source without the
-bloat that is so typical in second system implementations.

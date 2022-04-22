@@ -1,7 +1,10 @@
-; synopsis.lisp - so that the README example code is not made up and
-; therefore is less likely to be buggy
+#|
+eval 'exec sbcl --script "$0" ${1+"$@"}'
+ # synopsis.lisp - so that the README example code is not made up and
+ # therefore is less likely to be buggy. assumes ASDF install of m.
+|#
 
-;(ql:quickload :morna)
+;(ql:quickload :morna :silent t)
 (require :asdf)
 (asdf:load-system :morna)
 

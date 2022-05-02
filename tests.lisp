@@ -4,9 +4,16 @@
 ;   ecl --shell eg/synopsis.lisp
 ;   sbcl --script eg/synopsis.lisp
 ;
-; FiveAM expects for failure reports the form:
+; NOTE FiveAM expects for failure reports the form:
 ;
-;   (equality expected-result test-code)
+;   (equality expected got)
+;
+; this is opposite the is($got, $expected) convention in Perl modules
+; such as Test2::Tools::Compare
+;
+; TODO FIXME various tests mutate literal arrays and vectors in-place,
+; which in theory a conforming LISP (but not ECL nor SBCL at time of
+; writing) will error on
 
 (defpackage :morna/test (:use #:cl #:morna #:5am))
 (in-package :morna/test)

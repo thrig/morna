@@ -92,7 +92,7 @@
                   '(1 1 1) '(1 1 1)))))
 
 (test morna-display-grid
-      (is (string-equal
+      (is (string=
             (format nil ".#~c#.~c" #\newline #\newline)
             (with-output-to-string (ret)
               (morna-display-grid #2A((#\. #\#) (#\# #\.)) ret)))))

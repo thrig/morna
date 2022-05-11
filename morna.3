@@ -1,4 +1,4 @@
-.Dd April 21 2022
+.Dd May 11 2022
 .Dt MORNA 3l
 .Os
 .Sh NAME
@@ -21,6 +21,7 @@
 .It Pq Sy morna-multiply Em src Em factors
 .It Pq Sy morna-noise! Em src Em fill Em percent
 .It Pq Sy morna-rotate-grid Em src Em degrees
+.It Pq Sy morna-subrect Em src Em dst Em x Em y Em width Em height Op Em fill
 .It Pq Sy morna-trim Em src Em width
 .It Pq Sy morna-truncate Em src Em limits
 .It Pq Sy morna-upfrac Em src Em fill Em test-fn Op Em sources
@@ -153,6 +154,21 @@ which must be one of
 .Dv :90 ,
 .Dv :180 , or
 .Dv :270 .
+.It Pq Sy morna-subrect Em src Em dst Em x Em y Em width Em height Op Em fill
+Copy from
+.Em src
+into
+.Em dst
+starting at
+.Em x ,
+.Em y .
+.Em fill
+is used when points lie outside of
+.Em src .
+.Em dst
+is modified, and ideally should be large enough to hold the given
+.Em width ,
+.Em height .
 .It Pq Sy morna-trim Em src Em width
 Special case for
 .Sy MORNA-CROP

@@ -204,6 +204,19 @@
         (is (equalp #2A((3 2 1) (6 5 4)) (morna-rotate-grid six :180)))
         (is (equalp #2A((1 4) (2 5) (3 6)) (morna-rotate-grid six :270)))))
 
+(test morna-subrect
+      (let ((world (make-array '(5 5) :initial-contents
+                               '((#\a #\b #\c #\d #\e)
+                                 (#\f #\g #\h #\i #\j)
+                                 (#\k #\l #\m #\n #\o)
+                                 (#\p #\q #\r #\s #\t)
+                                 (#\u #\v #\w #\x #\y))))
+            (fov (make-array '(3 3))))
+        (is (equalp #2A((#\? #\? #\?) (#\? #\a #\b) (#\? #\f #\g))
+                    (morna-subrect world fov -1 -1 3 3)))
+        (is (equalp #2A((#\s #\t #\.) (#\x #\y #\.) (#\. #\. #\.))
+                    (morna-subrect world fov 3 3 3 3 #\.)))))
+
 (test morna-trim
       (is (equalp #(7) (morna-trim #(1 7 2) 1)))
       (is

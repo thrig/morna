@@ -12,7 +12,7 @@
            #:morna-crop #:morna-display-grid #:morna-flip-both!
            #:morna-flip-cols! #:morna-flip-four #:morna-flip-rows!
            #:morna-fourup #:morna-mask! #:morna-multiply #:morna-noise!
-           #:morna-rotate-grid #:morna-trim #:morna-truncate
+           #:morna-subrect #:morna-rotate-grid #:morna-trim #:morna-truncate
            #:morna-write-file #:morna-upfrac))
 (in-package #:morna)
 
@@ -280,9 +280,9 @@
         for index from 0 below size
         while (plusp to-fill) do
         (when (< (random 1.0) (/ to-fill size))
-           (setf (row-major-aref src index)
-             (if (functionp fill) (funcall fill to-fill size) fill))
-           (decf to-fill))
+          (setf (row-major-aref src index)
+                (if (functionp fill) (funcall fill to-fill size) fill))
+          (decf to-fill))
         (decf size))
   src)
 
@@ -301,6 +301,26 @@
     (:90  (rotate-90 src))
     (:180 (morna-flip-both! (morna-clone src)))
     (:270 (rotate-270 src))))
+
+; view-x, view-y being the upper left corner whence the copy starts.
+; this may or may not be inside of src. NOTE that dst is modified, but
+; not src. something like this could be used for field of view (FOV) of
+; a world map into a smaller display area
+(defun morna-subrect (src dst view-x view-y view-width view-height
+                      &optional (filler #\?))
+  "Copy a rectangle out of src into dst otherwise writing filler."
+  (declare (type (array * (* *)) src dst))
+  (loop for src-y from view-y
+        for dst-y from 0
+        repeat view-height do
+        (loop for src-x from view-x
+              for dst-x from 0
+              repeat view-width do
+              (setf (aref dst dst-y dst-x)
+                    (if (array-in-bounds-p src src-y src-x)
+                      (aref src src-y src-x)
+                      filler))))
+  dst)
 
 ; sugar for a morna-crop special case
 (defun morna-trim (src width &aux (len (array-rank src)))
